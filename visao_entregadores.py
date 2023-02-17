@@ -8,36 +8,85 @@ from PIL import Image
 import folium
 from streamlit_folium import folium_static
 
+
+# ============================
+# Funções
+# ============================
+
+def top_delivers(df , top_asc):
+
+    df_aux = (df.loc[: , ['Delivery_person_ID' , 'City' ,'Time_taken(min)']].
+                groupby(['Delivery_person_ID' , 'City']).mean().
+                sort_values([ 'City' ,'Time_taken(min)'] , ascending = top_asc)).reset_index()
+
+
+    df_aux01 = df_aux.loc[df_aux['City'] == 'Metropolitian', :].head(10)
+    df_aux02 = df_aux.loc[df_aux['City'] == 'Urban', :].head(10)
+    df_aux03 = df_aux.loc[df_aux['City'] == 'Semi-Urban', :].head(10)
+
+
+    df2 = pd.concat([df_aux01 , df_aux02 , df_aux03]).reset_index(drop = True)
+
+
+    return df2
+
+def clean_code(df):
+    """Esta função tem a responsabilidade de limpar o dataframe
+
+    Tipos de Limpeza:
+    1. Remoção dos dados NaN
+    2. Mudança do tipo da coluna de dados
+    3. Remoção dos espaços das variáveis de texto
+    4. Formatação da coluna de datas
+    5. Limpeza da coluna de tempo`remoção do texto da variável numérica)
+    
+    Input: Dataframe
+    Output: Dataframe
+    """
+
+    df.loc[:, 'ID'] = df.loc[:, 'ID'].str.strip()
+    df.loc[:, 'Delivery_person_ID'] = df.loc[:, 'Delivery_person_ID'].str.strip() 
+    df.loc[:, 'Road_traffic_density'] = df.loc[:, 'Road_traffic_density'].str.strip()
+    df.loc[:, 'Type_of_order'] = df.loc[:, 'Type_of_order'].str.strip()    
+    df.loc[:, 'Type_of_vehicle'] = df.loc[:, 'Type_of_vehicle'].str.strip()
+    df.loc[:, 'City'] = df.loc[:, 'City'].str.strip()    
+    df.loc[:, 'Festival'] = df.loc[:, 'Festival'].str.strip() 
+    df.loc[:, 'multiple_deliveries'] = df.loc[:, 'multiple_deliveries'].str.strip()    
+    df.loc[:, 'Delivery_person_Age'] = df.loc[:, 'Delivery_person_Age'].str.strip()    
+
+
+    # Excluir as linhas com NaN
+    # ( Conceitos de seleção condicional )
+
+    df = df.loc[df['multiple_deliveries'] != 'NaN' , :]
+    df = df.loc[df['Delivery_person_Age'] != 'NaN' , :]
+    df = df.loc[df['Road_traffic_density'] != 'NaN' , :]
+    df = df.loc[df['City'] != 'NaN' , :]
+    df = df.loc[df['Festival'] != 'NaN' , :]
+
+    # Conversao de texto/categoria/string para numeros inteiros
+    df['Delivery_person_Age'] = df['Delivery_person_Age'].astype( int )
+    df['Delivery_person_Ratings'] = df['Delivery_person_Ratings'].astype( float )
+    df['multiple_deliveries'] = df['multiple_deliveries'].astype( int )
+
+    # Limpando a coluna de time taken
+    df['Time_taken(min)'] = df['Time_taken(min)'].apply(lambda x: x.split('(min) ')[1])
+    df['Time_taken(min)'] = df['Time_taken(min)'].astype(int)
+
+    df['week_of_year']  = df['Order_Date'].dt.strftime('%U')
+
+    return df
+
+
+# ============================
+# Extração
+# ============================
+
 df = pd.read_csv(r'../data/train.csv',  parse_dates = ['Order_Date'] , dayfirst=True)
 
-df.loc[:, 'ID'] = df.loc[:, 'ID'].str.strip()
-df.loc[:, 'Delivery_person_ID'] = df.loc[:, 'Delivery_person_ID'].str.strip() 
-df.loc[:, 'Road_traffic_density'] = df.loc[:, 'Road_traffic_density'].str.strip()
-df.loc[:, 'Type_of_order'] = df.loc[:, 'Type_of_order'].str.strip()    
-df.loc[:, 'Type_of_vehicle'] = df.loc[:, 'Type_of_vehicle'].str.strip()
-df.loc[:, 'City'] = df.loc[:, 'City'].str.strip()    
-df.loc[:, 'Festival'] = df.loc[:, 'Festival'].str.strip() 
-df.loc[:, 'multiple_deliveries'] = df.loc[:, 'multiple_deliveries'].str.strip()    
-df.loc[:, 'Delivery_person_Age'] = df.loc[:, 'Delivery_person_Age'].str.strip()    
 
-
-# Excluir as linhas com NaN
-# ( Conceitos de seleção condicional )
-
-df = df.loc[df['multiple_deliveries'] != 'NaN' , :]
-df = df.loc[df['Delivery_person_Age'] != 'NaN' , :]
-df = df.loc[df['Road_traffic_density'] != 'NaN' , :]
-df = df.loc[df['City'] != 'NaN' , :]
-df = df.loc[df['Festival'] != 'NaN' , :]
-
-# Conversao de texto/categoria/string para numeros inteiros
-df['Delivery_person_Age'] = df['Delivery_person_Age'].astype( int )
-df['Delivery_person_Ratings'] = df['Delivery_person_Ratings'].astype( float )
-df['multiple_deliveries'] = df['multiple_deliveries'].astype( int )
-
-# Limpando a coluna de time taken
-df['Time_taken(min)'] = df['Time_taken(min)'].apply(lambda x: x.split('(min) ')[1])
-df['Time_taken(min)'] = df['Time_taken(min)'].astype(int)
+# cleaning dataset
+df = clean_code(df)
 
 # ============================
 # Sidebar
@@ -83,16 +132,13 @@ st.sidebar.markdown('### Powered by Felipe Pedrosa')
 st.sidebar.markdown('### Comunidade DS')
 
 # filtro de data
-linhas_selecionadas = df['Order_Date'] < date_slider
-df = df.loc[linhas_selecionadas , :]
+df = df.loc[df['Order_Date'] < date_slider , :]
 
 # filtro de transito
-linhas_selecionadas = df['Road_traffic_density'].isin(traffic_options)
-df = df.loc[linhas_selecionadas , :]
+df = df.loc[df['Road_traffic_density'].isin(traffic_options) , : ]
 
 # filtro de transito
-linhas_selecionadas = df['Weatherconditions'].isin(clima)
-df = df.loc[linhas_selecionadas , :]
+df = df.loc[df['Weatherconditions'].isin(clima) , : ]
 
 # ============================
 # Layout Streamlit
@@ -171,36 +217,12 @@ with tab1:
         
         with col1:
             st.markdown("##### Top entregadores mais rápidos")
-
-            df_aux = (df.loc[: , ['Delivery_person_ID' , 'City' ,'Time_taken(min)']].
-                        groupby(['Delivery_person_ID' , 'City']).mean().
-                        sort_values([ 'City' ,'Time_taken(min)'], ascending = True)).reset_index()
-
-
-
-            df_aux01 = df_aux.loc[df_aux['City'] == 'Metropolitian', :].head(10)
-            df_aux02 = df_aux.loc[df_aux['City'] == 'Urban', :].head(10)
-            df_aux03 = df_aux.loc[df_aux['City'] == 'Semi-Urban', :].head(10)
-
-
-            df2 = pd.concat([df_aux01 , df_aux02 , df_aux03]).reset_index(drop = True)
-
+            df2 = top_delivers(df , top_asc= True)
             st.dataframe(df2)
 
         with col2:
             st.markdown("##### Top entregadores mais lentos")
-
-            df_aux = (df.loc[: , ['Delivery_person_ID' , 'City' ,'Time_taken(min)']].
-                        groupby(['Delivery_person_ID' , 'City']).mean().
-                        sort_values([ 'City' ,'Time_taken(min)'] , ascending = False)).reset_index()
-
-
-
-            df_aux01 = df_aux.loc[df_aux['City'] == 'Metropolitian', :].head(10)
-            df_aux02 = df_aux.loc[df_aux['City'] == 'Urban', :].head(10)
-            df_aux03 = df_aux.loc[df_aux['City'] == 'Semi-Urban', :].head(10)
-
-
-            df2 = pd.concat([df_aux01 , df_aux02 , df_aux03]).reset_index(drop = True)
-
+            df2 = top_delivers(df , top_asc= False)
             st.dataframe(df2)
+
+
