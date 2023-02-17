@@ -9,37 +9,145 @@ import folium
 from streamlit_folium import folium_static
 import numpy as np
 
+# ============================
+# Funções
+# ============================
+
+            
+def avg_std_time_on_traffic(df):
+    df_aux = (df.loc[: , ['City' , 'Time_taken(min)', 'Road_traffic_density']].groupby(
+                                                                                        ['City', 'Road_traffic_density']).
+                                                                                        agg({"Time_taken(min)":['mean' , 'std']}))
+    df_aux.columns = ['avg_time' , 'std_time']
+
+    df_aux = df_aux.reset_index()
+    fig = px.sunburst(df_aux , path=['City' , 'Road_traffic_density'], values='avg_time',
+                    color='std_time', color_continuous_scale='RdBu',
+                    color_continuous_midpoint= np.average(df_aux['std_time']))
+
+    return fig
+    
+def avg_std_time_graph(df):
+    df_aux = df.loc[: , ['City' , 'Time_taken(min)']].groupby('City').agg({"Time_taken(min)":['mean' , 'std']})
+    df_aux.columns = ['avg_time' , 'std_time']
+
+    df_aux = df_aux.reset_index()
+
+    fig = go.Figure()
+    fig.add_trace(go.Bar(name='Control',
+                    x = df_aux['City'],
+                    y = df_aux['avg_time'],
+                    error_y=dict(type='data' , array=df_aux['std_time']) ))
+
+    fig.update_layout(barmode = 'group')
+
+    return fig
+
+def avg_std_time_delivery(df , op_fest , op ):
+
+    ''' Esta função calcula o tempo médio e o desvio padrão do tempo de entrega tanto em festival quanto em época fora de festivais
+        Parêmetros:
+            Input:
+                - df: Dataframe com os dados necessários para o cálculo
+                - op_fest: Indica se o calculo irá ser contado em tempo de festivaisç
+                    'Yes' : Indica que há festivais
+                    'No'  : Indica que nao há festivais
+                - op: Tipo de operação que precisa ser calculado
+                    'avg_time': Calcula o tmepo médio
+                    'std_time': Calcula o desvio padrão do tempo   
+            Output:
+                -df : Dataframe com 2 colunas e 1 linha
+    '''
+
+    cols=[ 'Time_taken(min)', 'Festival']
+
+    df_aux = df.loc[: , cols].groupby(['Festival']).agg({"Time_taken(min)":['mean' , 'std']})
+    df_aux.columns = ['avg_time' , 'std_time']
+    df_aux = df_aux.reset_index()
+
+    df_aux = np.round(df_aux.loc[df_aux['Festival'] == op_fest , op] , 2)
+
+    return df_aux
+
+def distance (df , fig):
+    if fig == False:
+        cols = ['Restaurant_latitude' , 'Restaurant_longitude' , 'Delivery_location_latitude', 'Delivery_location_longitude']
+        df['distance'] = df.loc[: , cols].apply(lambda x:
+                                                haversine((x['Restaurant_latitude'] , x['Restaurant_longitude']),
+                                                            (x['Delivery_location_latitude'],x['Delivery_location_longitude'])), axis = 1)
+
+        avg_distance =np.round(df['distance'].mean() , 2) 
+        return avg_distance
+
+    else:
+        cols = ['Restaurant_latitude' , 'Restaurant_longitude' , 'Delivery_location_latitude', 'Delivery_location_longitude']
+        df['distance'] = df.loc[: , cols].apply(lambda x:
+                                                haversine((x['Restaurant_latitude'] , x['Restaurant_longitude']),
+                                                            (x['Delivery_location_latitude'],x['Delivery_location_longitude'])), axis = 1)
+
+        avg_distance = df.loc[:,['City' , 'distance']].groupby('City').mean().reset_index()
+
+        # pull is given as a fraction of the pie radius
+
+        fig = go.Figure( data=[ go.Pie (labels=avg_distance['City'], values=avg_distance['distance'],pull= [0,0.1,0] )])
+
+        return fig
+
+def clean_code(df):
+    """Esta função tem a responsabilidade de limpar o dataframe
+
+    Tipos de Limpeza:
+    1. Remoção dos dados NaN
+    2. Mudança do tipo da coluna de dados
+    3. Remoção dos espaços das variáveis de texto
+    4. Formatação da coluna de datas
+    5. Limpeza da coluna de tempo`remoção do texto da variável numérica)
+    
+    Input: Dataframe
+    Output: Dataframe
+    """
+
+    df.loc[:, 'ID'] = df.loc[:, 'ID'].str.strip()
+    df.loc[:, 'Delivery_person_ID'] = df.loc[:, 'Delivery_person_ID'].str.strip() 
+    df.loc[:, 'Road_traffic_density'] = df.loc[:, 'Road_traffic_density'].str.strip()
+    df.loc[:, 'Type_of_order'] = df.loc[:, 'Type_of_order'].str.strip()    
+    df.loc[:, 'Type_of_vehicle'] = df.loc[:, 'Type_of_vehicle'].str.strip()
+    df.loc[:, 'City'] = df.loc[:, 'City'].str.strip()    
+    df.loc[:, 'Festival'] = df.loc[:, 'Festival'].str.strip() 
+    df.loc[:, 'multiple_deliveries'] = df.loc[:, 'multiple_deliveries'].str.strip()    
+    df.loc[:, 'Delivery_person_Age'] = df.loc[:, 'Delivery_person_Age'].str.strip()    
+
+
+    # Excluir as linhas com NaN
+    # ( Conceitos de seleção condicional )
+
+    df = df.loc[df['multiple_deliveries'] != 'NaN' , :]
+    df = df.loc[df['Delivery_person_Age'] != 'NaN' , :]
+    df = df.loc[df['Road_traffic_density'] != 'NaN' , :]
+    df = df.loc[df['City'] != 'NaN' , :]
+    df = df.loc[df['Festival'] != 'NaN' , :]
+
+    # Conversao de texto/categoria/string para numeros inteiros
+    df['Delivery_person_Age'] = df['Delivery_person_Age'].astype( int )
+    df['Delivery_person_Ratings'] = df['Delivery_person_Ratings'].astype( float )
+    df['multiple_deliveries'] = df['multiple_deliveries'].astype( int )
+
+    # Limpando a coluna de time taken
+    df['Time_taken(min)'] = df['Time_taken(min)'].apply(lambda x: x.split('(min) ')[1])
+    df['Time_taken(min)'] = df['Time_taken(min)'].astype(int)
+
+    df['week_of_year']  = df['Order_Date'].dt.strftime('%U')
+
+    return df
+
+# ============================
+# Extração
+# ============================
 
 df = pd.read_csv(r'../data/train.csv',  parse_dates = ['Order_Date'] , dayfirst=True)
 
-df.loc[:, 'ID'] = df.loc[:, 'ID'].str.strip()
-df.loc[:, 'Delivery_person_ID'] = df.loc[:, 'Delivery_person_ID'].str.strip() 
-df.loc[:, 'Road_traffic_density'] = df.loc[:, 'Road_traffic_density'].str.strip()
-df.loc[:, 'Type_of_order'] = df.loc[:, 'Type_of_order'].str.strip()    
-df.loc[:, 'Type_of_vehicle'] = df.loc[:, 'Type_of_vehicle'].str.strip()
-df.loc[:, 'City'] = df.loc[:, 'City'].str.strip()    
-df.loc[:, 'Festival'] = df.loc[:, 'Festival'].str.strip() 
-df.loc[:, 'multiple_deliveries'] = df.loc[:, 'multiple_deliveries'].str.strip()    
-df.loc[:, 'Delivery_person_Age'] = df.loc[:, 'Delivery_person_Age'].str.strip()    
-
-
-# Excluir as linhas com NaN
-# ( Conceitos de seleção condicional )
-
-df = df.loc[df['multiple_deliveries'] != 'NaN' , :]
-df = df.loc[df['Delivery_person_Age'] != 'NaN' , :]
-df = df.loc[df['Road_traffic_density'] != 'NaN' , :]
-df = df.loc[df['City'] != 'NaN' , :]
-df = df.loc[df['Festival'] != 'NaN' , :]
-
-# Conversao de texto/categoria/string para numeros inteiros
-df['Delivery_person_Age'] = df['Delivery_person_Age'].astype( int )
-df['Delivery_person_Ratings'] = df['Delivery_person_Ratings'].astype( float )
-df['multiple_deliveries'] = df['multiple_deliveries'].astype( int )
-
-# Limpando a coluna de time taken
-df['Time_taken(min)'] = df['Time_taken(min)'].apply(lambda x: x.split('(min) ')[1])
-df['Time_taken(min)'] = df['Time_taken(min)'].astype(int)
+# cleaning dataset
+df = clean_code(df)
 
 # ============================
 # Sidebar
@@ -85,16 +193,14 @@ st.sidebar.markdown('### Powered by Felipe Pedrosa')
 st.sidebar.markdown('### Comunidade DS')
 
 # filtro de data
-linhas_selecionadas = df['Order_Date'] < date_slider
-df = df.loc[linhas_selecionadas , :]
+df = df.loc[df['Order_Date'] <= date_slider , :]
 
 # filtro de transito
-linhas_selecionadas = df['Road_traffic_density'].isin(traffic_options)
-df = df.loc[linhas_selecionadas , :]
+df = df.loc[df['Road_traffic_density'].isin(traffic_options) , : ]
 
 # filtro de transito
-linhas_selecionadas = df['Weatherconditions'].isin(clima)
-df = df.loc[linhas_selecionadas , :]
+df = df.loc[df['Weatherconditions'].isin(clima) , : ]
+
 
 # ============================
 # Layout Streamlit
@@ -112,58 +218,29 @@ with tab1:
             delivery_unique = len(df.loc[: , 'Delivery_person_ID'].unique())
             col1.metric('Entregadores Únicos' , delivery_unique)
         with col2:
-            cols = ['Restaurant_latitude' , 'Restaurant_longitude' , 'Delivery_location_latitude', 'Delivery_location_longitude']
-            df['distance'] = df.loc[: , cols].apply(lambda x:
-                                                    haversine((x['Restaurant_latitude'] , x['Restaurant_longitude']),
-                                                                (x['Delivery_location_latitude'],x['Delivery_location_longitude'])), axis = 1)
-
-            avg_distance =np.round(df['distance'].mean() , 2) 
+            
+            avg_distance = distance(df, False)
             col2.metric('A dist. média entregas' , avg_distance)
 
-
         with col3:
-            cols=[ 'Time_taken(min)', 'Festival']
-
-            df_aux = df.loc[: , cols].groupby(['Festival']).agg({"Time_taken(min)":['mean' , 'std']})
-            df_aux.columns = ['avg_time' , 'std_time']
-            df_aux = df_aux.reset_index()
-
-            df_aux = np.round(df_aux.loc[df_aux['Festival'] == 'Yes' , 'avg_time'] , 2)
-
+           
+            df_aux = avg_std_time_delivery(df , 'Yes' , 'avg_time')
             col3.metric('Avg entrega c/ fest.' , df_aux)
 
         with col4:
-            cols=[ 'Time_taken(min)', 'Festival']
 
-            df_aux = df.loc[: , cols].groupby(['Festival']).agg({"Time_taken(min)":['mean' , 'std']})
-            df_aux.columns = ['avg_time' , 'std_time']
-            df_aux = df_aux.reset_index()
-
-            df_aux = np.round(df_aux.loc[df_aux['Festival'] == 'Yes' , 'std_time'] , 2)
-
+            df_aux = avg_std_time_delivery(df , 'Yes' , 'std_time')
             col3.metric('Std entrega c/ fest.' , df_aux)
 
         with col5:
-            cols=[ 'Time_taken(min)', 'Festival']
 
-            df_aux = df.loc[: , cols].groupby(['Festival']).agg({"Time_taken(min)":['mean' , 'std']})
-            df_aux.columns = ['avg_time' , 'std_time']
-            df_aux = df_aux.reset_index()
-
-            df_aux = np.round(df_aux.loc[df_aux['Festival'] == 'No' , 'avg_time'] , 2)
-
+            df_aux = avg_std_time_delivery(df , 'No' , 'avg_time')
             col3.metric('Avg entrega s/ fest.' , df_aux)
+
         with col6:
-            cols=[ 'Time_taken(min)', 'Festival']
 
-            df_aux = df.loc[: , cols].groupby(['Festival']).agg({"Time_taken(min)":['mean' , 'std']})
-            df_aux.columns = ['avg_time' , 'std_time']
-            df_aux = df_aux.reset_index()
-
-            df_aux = np.round(df_aux.loc[df_aux['Festival'] == 'No' , 'std_time'] , 2)
-
+            df_aux = avg_std_time_delivery(df , 'No' , 'std_time')
             col3.metric('Std entrega s/ fest.' , df_aux)
-
 
 
     with st.container():
@@ -172,20 +249,10 @@ with tab1:
         col1 , col2 = st.columns(2)
 
         with col1:
-            df_aux = df.loc[: , ['City' , 'Time_taken(min)']].groupby('City').agg({"Time_taken(min)":['mean' , 'std']})
-            df_aux.columns = ['avg_time' , 'std_time']
-
-            df_aux = df_aux.reset_index()
-
-            fig = go.Figure()
-            fig.add_trace(go.Bar(name='Control',
-                            x = df_aux['City'],
-                            y = df_aux['avg_time'],
-                            error_y=dict(type='data' , array=df_aux['std_time']) ))
-
-            fig.update_layout(barmode = 'group')
-
+        
+            fig  = avg_std_time_graph(df)
             st.plotly_chart(fig)
+
         with col2:
             st.subheader('Distribuição da distância')
 
@@ -205,32 +272,11 @@ with tab1:
         col1 , col2 = st.columns(2)
         
         with col1:
-            cols = ['Restaurant_latitude' , 'Restaurant_longitude' , 'Delivery_location_latitude', 'Delivery_location_longitude']
-            df['distance'] = df.loc[: , cols].apply(lambda x:
-                                                    haversine((x['Restaurant_latitude'] , x['Restaurant_longitude']),
-                                                            (x['Delivery_location_latitude'],x['Delivery_location_longitude'])), axis = 1)
 
-            
-            avg_distance = df.loc[:,['City' , 'distance']].groupby('City').mean().reset_index()
-
-            # pull is given as a fraction of the pie radius
-
-            fig = go.Figure( data=[ go.Pie (labels=avg_distance['City'], values=avg_distance['distance'],pull= [0,0.1,0] )])
+            fig = distance(df , True)
             st.plotly_chart(fig)
             
-
-
         with col2:
-            
-            df_aux = (df.loc[: , ['City' , 'Time_taken(min)', 'Road_traffic_density']].groupby(
-                                                                                                ['City', 'Road_traffic_density']).
-                                                                                                agg({"Time_taken(min)":['mean' , 'std']}))
-            df_aux.columns = ['avg_time' , 'std_time']
-
-            df_aux = df_aux.reset_index()
-            fig = px.sunburst(df_aux , path=['City' , 'Road_traffic_density'], values='avg_time',
-                            color='std_time', color_continuous_scale='RdBu',
-                            color_continuous_midpoint= np.average(df_aux['std_time']))
-
+            fig = avg_std_time_on_traffic(df)
             st.plotly_chart(fig)
             

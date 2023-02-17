@@ -131,7 +131,7 @@ st.sidebar.markdown('### Powered by Felipe Pedrosa')
 st.sidebar.markdown('### Comunidade DS')
 
 # filtro de data
-df = df.loc[df['Order_Date'] < date_slider , :]
+df = df.loc[df['Order_Date'] <= date_slider , :]
 
 # filtro de transito
 df = df.loc[df['Road_traffic_density'].isin(traffic_options) , : ]
