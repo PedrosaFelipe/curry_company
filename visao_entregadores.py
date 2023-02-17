@@ -77,7 +77,6 @@ def clean_code(df):
 
     return df
 
-
 # ============================
 # Extração
 # ============================
@@ -207,7 +206,6 @@ with tab1:
             # reset do index
             df_avg_std__rating_by_Weather = df_avg_std__rating_by_Weather.reset_index()
             st.dataframe(df_avg_std__rating_by_Weather)
-
             
     with st.container():
         st.markdown("""---""")

@@ -126,6 +126,7 @@ def order_metric(df):
 
 df = pd.read_csv(r'../data/train.csv',  parse_dates = ['Order_Date'] , dayfirst=True)
 
+# cleaning dataset
 df = clean_code(df)
 
 # ============================
@@ -172,17 +173,13 @@ st.sidebar.markdown('### Powered by Felipe Pedrosa')
 st.sidebar.markdown('### Comunidade DS')
 
 # filtro de data
-linhas_selecionadas = df['Order_Date'] < date_slider
-df = df.loc[linhas_selecionadas , :]
+df = df.loc[df['Order_Date'] <= date_slider , :]
 
 # filtro de transito
-linhas_selecionadas = df['Road_traffic_density'].isin(traffic_options)
-df = df.loc[linhas_selecionadas , :]
+df = df.loc[df['Road_traffic_density'].isin(traffic_options) , : ]
 
 # filtro de transito
-linhas_selecionadas = df['Weatherconditions'].isin(clima)
-df = df.loc[linhas_selecionadas , :]
-
+df = df.loc[df['Weatherconditions'].isin(clima) , : ]
 
 # ============================
 # Layout Streamlit
