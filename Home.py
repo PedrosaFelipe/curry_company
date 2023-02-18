@@ -9,7 +9,6 @@ image_path =  'data/logo.png'
 image = Image.open(image_path)
 st.sidebar.image(image , width = 230)
 
-
 st.sidebar.markdown('# Cury Company')
 st.sidebar.markdown('## Fast Delivery in Town')
 st.sidebar.markdown("""---""")
