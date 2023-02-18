@@ -10,6 +10,8 @@ from PIL import Image
 import folium
 from streamlit_folium import folium_static
 
+
+st.set_page_config(page_title= 'Visão Empresa' , layout='wide')
 # ============================
 # Funções
 # ============================
@@ -124,7 +126,7 @@ def order_metric(df):
 # Extração
 # ============================
 
-df = pd.read_csv(r'../data/train.csv',  parse_dates = ['Order_Date'] , dayfirst=True)
+df = pd.read_csv('data/train.csv',  parse_dates = ['Order_Date'] , dayfirst=True)
 
 # cleaning dataset
 df = clean_code(df)
@@ -136,7 +138,7 @@ df = clean_code(df)
 
 st.header('Marketplace - Visão Cliente')
 
-image_path = '../data/logo.webp'
+image_path = 'data/logo.webp'
 image = Image.open(image_path)
 st.sidebar.image(image , width = 230)
 

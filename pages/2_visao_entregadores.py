@@ -8,6 +8,7 @@ from PIL import Image
 import folium
 from streamlit_folium import folium_static
 
+st.set_page_config(page_title= 'Visão Entregadores' , layout='wide')
 
 # ============================
 # Funções
@@ -81,7 +82,7 @@ def clean_code(df):
 # Extração
 # ============================
 
-df = pd.read_csv(r'../data/train.csv',  parse_dates = ['Order_Date'] , dayfirst=True)
+df = pd.read_csv('data/train.csv',  parse_dates = ['Order_Date'] , dayfirst=True)
 
 
 # cleaning dataset
@@ -94,7 +95,7 @@ df = clean_code(df)
 
 st.header('Marketplace - Visão Entregadores')
 
-image_path = '../data/logo.webp'
+image_path = 'data/logo.webp'
 image = Image.open(image_path)
 st.sidebar.image(image , width = 230)
 

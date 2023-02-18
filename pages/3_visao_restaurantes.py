@@ -9,6 +9,8 @@ import folium
 from streamlit_folium import folium_static
 import numpy as np
 
+st.set_page_config(page_title= 'Visão Restaurantes' , layout='wide')
+
 # ============================
 # Funções
 # ============================
@@ -144,7 +146,7 @@ def clean_code(df):
 # Extração
 # ============================
 
-df = pd.read_csv(r'../data/train.csv',  parse_dates = ['Order_Date'] , dayfirst=True)
+df = pd.read_csv('data/train.csv',  parse_dates = ['Order_Date'] , dayfirst=True)
 
 # cleaning dataset
 df = clean_code(df)
@@ -156,7 +158,7 @@ df = clean_code(df)
 
 st.header('Marketplace - Visão Restaurantes')
 
-image_path = '../data/logo.webp'
+image_path = 'data/logo.webp'
 image = Image.open(image_path)
 st.sidebar.image(image , width = 230)
 
@@ -212,7 +214,7 @@ with tab1:
     with st.container():
         st.title('Overal Metrics')
 
-        col1 , col2, col3, col4, col5, col6 = st.columns(6, gap='large')
+        col1 , col2, col3, col4, col5, col6 = st.columns(6)
 
         with col1:
             delivery_unique = len(df.loc[: , 'Delivery_person_ID'].unique())
@@ -225,28 +227,28 @@ with tab1:
         with col3:
            
             df_aux = avg_std_time_delivery(df , 'Yes' , 'avg_time')
-            col3.metric('Avg entrega c/ fest.' , df_aux)
+            col3.metric('Tempo médio c/ fest.' , df_aux)
 
         with col4:
 
             df_aux = avg_std_time_delivery(df , 'Yes' , 'std_time')
-            col3.metric('Std entrega c/ fest.' , df_aux)
+            col4.metric('Std entrega c/ fest.' , df_aux)
 
         with col5:
 
             df_aux = avg_std_time_delivery(df , 'No' , 'avg_time')
-            col3.metric('Avg entrega s/ fest.' , df_aux)
+            col5.metric('Tempo médio s/ fest.' , df_aux)
 
         with col6:
 
             df_aux = avg_std_time_delivery(df , 'No' , 'std_time')
-            col3.metric('Std entrega s/ fest.' , df_aux)
+            col6.metric('Std entrega s/ fest.' , df_aux)
 
 
     with st.container():
         st.markdown("""---""")
         st.subheader('Tempo medio de entrega por cidade')
-        col1 , col2 = st.columns(2)
+        col1 , col2 = st.columns(2 , gap='large')
 
         with col1:
         

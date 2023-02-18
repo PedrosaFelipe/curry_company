@@ -1,0 +1,4 @@
+[ZoneTransfer]
+ZoneId=3
+ReferrerUrl=https://membro.comunidadedatascience.com/
+HostUrl=https://memberkit.us-east-1.linodeobjects.com/3pyu85qii9uh522m6sa1oxjbhruq?response-content-disposition=attachment%3B%20filename%3D%22train.csv%22%3B%20filename%2A%3DUTF-8%27%27train.csv&response-content-type=text%2Fcsv&X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Credential=D8QRE4HCLMEFETBA83PS%2F20230212%2Fus-east-1%2Fs3%2Faws4_request&X-Amz-Date=20230212T050823Z&X-Amz-Expires=604800&X-Amz-SignedHeaders=host&X-Amz-Signature=661304e1c789ec7b94f6aeea85a48f39f001b7dbdea820c2c7e0dbeb02acff46

@@ -5,7 +5,7 @@ st.set_page_config(
     page_title="Home",
 )
 
-image_path =  '../data/logo.png'
+image_path =  'data/logo.png'
 image = Image.open(image_path)
 st.sidebar.image(image , width = 230)
 
